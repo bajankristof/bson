@@ -30,10 +30,10 @@
 ]).
 
 -spec decode(Binary :: binary()) -> {map(), binary()}.
-decode(Binary) -> bson_decoder:process(Binary).
+decode(Binary) -> bson_decoder:decode(Binary).
 
--spec encode(Map :: map()) -> binary().
-encode(Map) -> bson_encoder:process(Map).
+-spec encode(Document :: map()) -> binary().
+encode(Document) -> bson_encoder:encode(Document).
 
 -spec binary_to_objectid(binary()) -> objectid().
 binary_to_objectid(Id) ->
