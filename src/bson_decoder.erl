@@ -1,6 +1,27 @@
 -module(bson_decoder).
 
+%% high level functions
 -export([decode/1]).
+%% lower level functions
+-export([
+    decode_int32/1,
+    decode_int64/1,
+    decode_float64/1,
+    decode_boolean/1,
+    decode_string/1,
+    decode_cstring/1,
+    decode_null/1,
+    decode_binary/1,
+    decode_date/1,
+    decode_regexp/1,
+    decode_timestamp/1,
+    decode_javascript/1,
+    decode_objectid/1,
+    decode_min_key/1,
+    decode_max_key/1,
+    decode_document/1,
+    decode_array/1
+]).
 
 -include_lib("bson/include/bson.hrl").
 -include("./bson.hrl").
@@ -52,6 +73,10 @@ decode_string(<<?int32(Size), Binary/binary>>) ->
     <<String:Length/binary, 0:8, Remainder/binary>> = Binary,
     {String, Remainder}.
 
+-spec decode_cstring(Binary :: binary()) -> {binary(), binary()}.
+decode_cstring(Binary) ->
+    read_terminal(Binary).
+
 %% @doc Returns an erlang term representation of
 %% the BSON null type based on `Binary`.
 %% (The second element of the tuple are the remaining bits of the operation.)
@@ -89,8 +114,8 @@ decode_date(<<?int64(Millisecs), Remainder/binary>>) ->
 %% (The second element of the tuple are the remaining bits of the operation.)
 -spec decode_regexp(Binary :: binary()) -> {bson:regexp(), binary()}.
 decode_regexp(Binary) ->
-    {Regexp, Rest} = read_terminal(Binary),
-    {Opts, Remainder} = read_terminal(Rest),
+    {Regexp, Rest} = decode_cstring(Binary),
+    {Opts, Remainder} = decode_cstring(Rest),
     {{regexp, Regexp, Opts}, Remainder}.
 
 %% @doc Returns an erlang term representation of
@@ -169,7 +194,7 @@ decode_field(Type, Binary) ->
 
 -spec decode_key(Binary :: binary()) -> {binary(), binary()}.
 decode_key(Binary) ->
-    read_terminal(Binary).
+    decode_cstring(Binary).
 
 -spec decode_value(Type :: integer(), Binary :: binary()) -> {term(), binary()}.
 decode_value(?BSON_INT32, Binary) -> decode_int32(Binary);

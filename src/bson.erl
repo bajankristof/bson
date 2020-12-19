@@ -1,14 +1,9 @@
 -module(bson).
 
--export([
-    decode/1,
-    encode/1
-]).
-
--export([
-    objectid_to_binary/1,
-    binary_to_objectid/1
-]).
+%% api functions
+-export([decode/1, encode/1]).
+%% utility functions
+-export([objectid_to_binary/1, binary_to_objectid/1]).
 
 -type objectid() :: {binary()}.
 -type date() :: erlang:timestamp().

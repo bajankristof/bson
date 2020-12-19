@@ -1,6 +1,27 @@
 -module(bson_encoder).
 
+%% high level functions
 -export([encode/1]).
+%% lower level functions
+-export([
+    encode_int32/1,
+    encode_int64/1,
+    encode_float64/1,
+    encode_boolean/1,
+    encode_string/1,
+    encode_cstring/1,
+    encode_null/1,
+    encode_binary/1,
+    encode_date/1,
+    encode_regexp/1,
+    encode_timestamp/1,
+    encode_javascript/1,
+    encode_objectid/1,
+    encode_min_key/1,
+    encode_max_key/1,
+    encode_document/1,
+    encode_array/1
+]).
 
 -include_lib("bson/include/bson.hrl").
 -include("./bson.hrl").
@@ -30,10 +51,15 @@ encode_boolean(true) -> <<1>>;
 encode_boolean(false) -> <<0>>.
 
 %% @doc Returns the BSON string representation of `String`.
--spec encode_string(binary()) -> binary().
+-spec encode_string(String :: binary()) -> binary().
 encode_string(String) ->
     Size = (erlang:byte_size(String) + 1),
     <<?int32(Size), String/binary, ?BSON_EOT>>.
+
+%% @doc Returns the BSON cstring representation of `String`.
+-spec encode_cstring(String :: binary()) -> binary().
+encode_cstring(String) ->
+    write_terminal(String).
 
 %% @doc Returns the BSON representation of null.
 -spec encode_null(null) -> binary().
@@ -61,7 +87,7 @@ encode_date({Megasecs, Secs, Microsecs}) ->
 %% @doc Returns the BSON regexp representation of `Regexp`.
 -spec encode_regexp(Regexp :: bson:regexp()) -> binary().
 encode_regexp({regexp, Regexp, Opts}) ->
-    <<(write_terminal(Regexp))/binary, (write_terminal(Opts))/binary>>.
+    <<(encode_cstring(Regexp))/binary, (encode_cstring(Opts))/binary>>.
 
 %% @doc Returns the BSON timestamp representation of `Timestamp`.
 -spec encode_timestamp(Timestamp :: bson:timestamp()) -> binary().
@@ -108,7 +134,7 @@ encode_field(Key, Term) ->
 
 -spec encode_key(term()) -> binary().
 encode_key(Key) when erlang:is_binary(Key) ->
-    write_terminal(Key);
+    encode_cstring(Key);
 encode_key(Key) when erlang:is_atom(Key) ->
     encode_key(erlang:atom_to_binary(Key, utf8));
 encode_key(Key) when erlang:is_integer(Key) ->
