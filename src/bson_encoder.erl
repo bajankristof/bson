@@ -1,179 +1,161 @@
 -module(bson_encoder).
 
-%% high level functions
--export([encode/1]).
-%% lower level functions
 -export([
-    encode_int32/1,
-    encode_int64/1,
-    encode_float64/1,
-    encode_boolean/1,
-    encode_string/1,
-    encode_cstring/1,
-    encode_null/1,
-    encode_binary/1,
-    encode_date/1,
-    encode_regexp/1,
-    encode_timestamp/1,
-    encode_javascript/1,
-    encode_objectid/1,
-    encode_min_key/1,
-    encode_max_key/1,
-    encode_document/1,
-    encode_array/1
+    byte/1,
+    int32/1,
+    uint32/1,
+    int64/1,
+    uint64/1,
+    double/1,
+    boolean/1,
+    string/1,
+    cstring/1,
+    objectid/1,
+    datetime/1,
+    timestamp/1,
+    javascript/1,
+    regexp/1,
+    binary/1,
+    document/1
 ]).
+-export([struct/1]).
+-export([void/1]).
 
--include_lib("bson/include/bson.hrl").
--include("./bson.hrl").
+-include("./constants.hrl").
+-include("./functions.hrl").
 
-%% @doc Returns the BSON representation of `Document`.
--spec encode(Document :: map()) -> binary().
-encode(#{} = Document) ->
-    encode_document(Document).
+%% API functions
 
-%% === TYPE ENCODER FUNCTIONS ===
+-spec byte(Value :: integer()) -> binary().
+byte(Value) when ?isbyte(Value) ->
+    <<?byte(Value)>>.
 
-%% @doc Returns the BSON int32 representation of `Int`.
--spec encode_int32(Int :: integer()) -> binary().
-encode_int32(Int) -> <<?int32(Int)>>.
+-spec int32(Value :: integer()) -> binary().
+int32(Value) when ?isint32(Value) ->
+    <<?int32(Value)>>.
 
-%% @doc Returns the BSON int64 representation of `Int`.
--spec encode_int64(Int :: integer()) -> binary().
-encode_int64(Int) -> <<?int64(Int)>>.
+uint32(Value) when ?isuint32(Value) ->
+    <<?uint32(Value)>>.
 
-%% @doc Returns the BSON float64 representation of `Float`.
--spec encode_float64(Float :: float()) -> binary().
-encode_float64(Float) -> <<?float64(Float)>>.
+-spec int64(Value :: integer()) -> binary().
+int64(Value) when ?isint64(Value) ->
+    <<?int64(Value)>>.
 
-%% @doc Returns the BSON boolean representation of `Boolean`.
--spec encode_boolean(Boolean :: boolean()) -> binary().
-encode_boolean(true) -> <<1>>;
-encode_boolean(false) -> <<0>>.
+-spec uint64(Value :: integer()) -> binary().
+uint64(Value) when ?isuint64(Value) ->
+    <<?uint64(Value)>>.
 
-%% @doc Returns the BSON string representation of `String`.
--spec encode_string(String :: binary()) -> binary().
-encode_string(String) ->
-    Size = (erlang:byte_size(String) + 1),
-    <<?int32(Size), String/binary, ?BSON_EOT>>.
+-spec double(Value :: float()) -> binary().
+double(Value) when erlang:is_float(Value) ->
+    <<?double(Value)>>;
+double(Value) when erlang:is_integer(Value) ->
+    <<?double(Value)>>.
 
-%% @doc Returns the BSON cstring representation of `String`.
--spec encode_cstring(String :: binary()) -> binary().
-encode_cstring(String) ->
-    write_terminal(String).
+-spec boolean(Value :: boolean()) -> binary().
+boolean(true) -> <<?byte(1)>>;
+boolean(false) -> <<?byte(0)>>.
 
-%% @doc Returns the BSON representation of null.
--spec encode_null(null) -> binary().
-encode_null(null) -> <<>>.
+-spec string(Value :: binary()) -> binary().
+string(Value) when erlang:is_binary(Value) ->
+    struct([{int32, erlang:byte_size(Value) + 1}, {cstring, Value}]);
+string(Value) when erlang:is_list(Value) ->
+    string(erlang:list_to_binary(Value));
+string(Value) when erlang:is_atom(Value) ->
+    string(erlang:atom_to_binary(Value)).
 
-%% @doc Returns the BSON representation of `Binary`.
--spec encode_binary(Binary :: bson:bin()) -> binary().
-encode_binary({Type, String}) ->
-    Size = erlang:byte_size(String),
-    Tag = case Type of
-        binary -> ?BSON_SUBTYPE_BINARY;
-        function -> ?BSON_SUBTYPE_FUNCTION;
-        uuid -> ?BSON_SUBTYPE_UUID;
-        md5 -> ?BSON_SUBTYPE_MD5;
-        '$$' -> ?BSON_SUBTYPE_USER_DEFINED
-    end,
-    <<?int32(Size), ?uint8(Tag), String/binary>>.
+-spec cstring(Value :: binary()) -> binary().
+cstring(Value) when erlang:is_binary(Value) ->
+    <<Value/binary, ?byte(0)>>;
+cstring(Value) when erlang:is_list(Value) ->
+    cstring(erlang:list_to_binary(Value));
+cstring(Value) when erlang:is_atom(Value) ->
+    cstring(erlang:atom_to_binary(Value)).
 
-%% @doc Returns the BSON UTC date representation of `Date`.
--spec encode_date(Date :: bson:date()) -> binary().
-encode_date({Megasecs, Secs, Microsecs}) ->
-    Millisecs = Megasecs * 1000000000 + Secs * 1000 + Microsecs div 1000,
-    <<?int64(Millisecs)>>.
+-spec objectid(bson:objectid()) -> binary().
+objectid({Value}) when erlang:is_binary(Value) ->
+    <<Value:12/binary>>.
 
-%% @doc Returns the BSON regexp representation of `Regexp`.
--spec encode_regexp(Regexp :: bson:regexp()) -> binary().
-encode_regexp({regexp, Regexp, Opts}) ->
-    <<(encode_cstring(Regexp))/binary, (encode_cstring(Opts))/binary>>.
+-spec datetime(bson:datetime()) -> binary().
+datetime({Megasecs, Secs, Microsecs}) ->
+    <<?int64((Megasecs * 1000000000 + Secs * 1000 + Microsecs div 1000))>>.
 
-%% @doc Returns the BSON timestamp representation of `Timestamp`.
--spec encode_timestamp(Timestamp :: bson:timestamp()) -> binary().
-encode_timestamp({timestamp, Timestamp, Id}) ->
-    <<?uint32(Timestamp), ?uint32(Id)>>.
+-spec timestamp(bson:timestamp()) -> binary().
+timestamp({timestamp, Value}) ->
+    uint64(Value).
 
-%% @doc Returns the BSON javascript representation of `Javascript`.
--spec encode_javascript(Javascript :: bson:javascript()) -> binary().
-encode_javascript({javascript, Code}) ->
-    encode_string(Code).
+-spec javascript(bson:javascript()) -> binary().
+javascript({javascript, Value}) ->
+    string(Value).
 
-%% @doc Returns the BSON object id representation of `Id`.
--spec encode_objectid(Id :: bson:objectid()) -> binary().
-encode_objectid({Id}) -> <<Id:12/binary>>.
+-spec regexp(bson:regexp()) -> binary().
+regexp({regexp, [_, _] = Value}) ->
+    erlang:list_to_binary(lists:map(fun cstring/1, Value)).
 
-%% @doc Returns the BSON min key representation of `MIN_KEY`.
--spec encode_min_key(bson:min_key()) -> binary().
-encode_min_key('MIN_KEY') -> <<>>.
+-spec binary(bson:bin()) -> binary().
+binary({binary, Value}) when erlang:is_binary(Value) ->
+    <<?int32((erlang:byte_size(Value))), ?byte(?BINARY_SUBTYPE_DEFAULT), Value/binary>>;
+binary({function, Value}) when erlang:is_binary(Value) ->
+    <<?int32((erlang:byte_size(Value))), ?byte(?BINARY_SUBTYPE_FUNCTION), Value/binary>>;
+binary({uuid, Value}) when erlang:is_binary(Value) ->
+    <<?int32((erlang:byte_size(Value))), ?byte(?BINARY_SUBTYPE_UUID), Value/binary>>;
+binary({md5, Value}) when erlang:is_binary(Value) ->
+    <<?int32((erlang:byte_size(Value))), ?byte(?BINARY_SUBTYPE_MD5), Value/binary>>;
+binary({'$$', Value}) when erlang:is_binary(Value) ->
+    <<?int32((erlang:byte_size(Value))), ?byte(?BINARY_SUBTYPE_USER_DEFINED), Value/binary>>.
 
-%% @doc Returns the BSON max key representation of `MAX_KEY`.
--spec encode_max_key(bson:max_key()) -> binary().
-encode_max_key('MAX_KEY') -> <<>>.
+-spec document(Document :: map() | list()) -> binary().
+document(Document) when erlang:is_map(Document) orelse erlang:is_list(Document) ->
+    Payload = elist(Document),
+    <<?int32((erlang:byte_size(Payload) + 5)), Payload/binary, ?byte(0)>>.
 
-%% @doc Returns the BSON document or array representation of `Document`.
--spec encode_document(Document :: map() | list()) -> binary().
-encode_document(Document) ->
-    Binary = fold_complex(fun (Key, Value, Acc) ->
-        <<Acc/binary, (encode_field(Key, Value))/binary>>
-    end, Document),
-    Size = (erlang:byte_size(Binary) + 5),
-    <<?int32(Size), Binary/binary, ?BSON_EOT>>.
+-spec struct(Spec :: list({Function :: atom(), Value :: term()})) -> binary().
+struct(Spec) ->
+    lists:foldl(fun ({Function, Value}, Acc) ->
+        <<Acc/binary, (erlang:apply(?MODULE, Function, [Value]))/binary>>
+    end, <<>>, Spec).
 
-%% @doc Returns the BSON array representation of `Array`.
--spec encode_array(Array :: list()) -> binary().
-encode_array(Array) ->
-    encode_document(Array).
+-spec void(_) -> binary().
+void(_) -> <<>>.
 
-%% === UTILITY ENCODER FUNCTIONS ===
+%% private functions
 
--spec encode_field(term(), term()) -> binary().
-encode_field(Key, Term) ->
-    {Type, Value} = encode_value(Term),
-    <<?uint8(Type), (encode_key(Key))/binary, Value/binary>>.
+-spec elist(Document :: map() | list()) -> binary().
+elist(Document) ->
+    fold(fun (Key, Value, Acc) ->
+        {Type, Function} = whatis(Value),
+        <<Acc/binary, (struct([{byte, Type}, {cstring, Key}, {Function, Value}]))/binary>>
+    end, Document).
 
--spec encode_key(term()) -> binary().
-encode_key(Key) when erlang:is_binary(Key) ->
-    encode_cstring(Key);
-encode_key(Key) when erlang:is_atom(Key) ->
-    encode_key(erlang:atom_to_binary(Key, utf8));
-encode_key(Key) when erlang:is_integer(Key) ->
-    encode_key(erlang:integer_to_binary(Key)).
+-spec whatis(Value :: term()) -> {Type :: integer(), Function :: atom()}.
+whatis(null) -> {?NULL, void};
+whatis('MIN_KEY') -> {?MIN_KEY, void};
+whatis('MAX_KEY') -> {?MAX_KEY, void};
+whatis(Value) when ?isint32(Value) -> {?INT32, int32};
+whatis(Value) when ?isint64(Value) -> {?INT64, int64};
+whatis(Value) when erlang:is_float(Value) -> {?DOUBLE, double};
+whatis(Value) when erlang:is_boolean(Value) -> {?BOOLEAN, boolean};
+whatis(Value) when erlang:is_binary(Value) -> {?STRING, string};
+whatis(Value) when erlang:is_atom(Value) -> {?STRING, string};
+whatis({_}) -> {?OBJECTID, objectid};
+whatis({_, _, _}) -> {?DATETIME, datetime};
+whatis({timestamp, _}) -> {?TIMESTAMP, timestamp};
+whatis({javascript, _}) -> {?JAVASCRIPT, javascript};
+whatis({regexp, _}) -> {?REGEXP, regexp};
+whatis({binary, _}) -> {?BINARY, binary};
+whatis({function, _}) -> {?BINARY, binary};
+whatis({uuid, _}) -> {?BINARY, binary};
+whatis({md5, _}) -> {?BINARY, binary};
+whatis({'$$', _}) -> {?BINARY, binary};
+whatis(#{}) -> {?DOCUMENT, document};
+whatis([_|_]) -> {?ARRAY, document};
+whatis([]) -> {?ARRAY, document}.
 
--spec encode_value(term()) -> {integer(), binary()}.
-encode_value(null) -> {?BSON_NULL, encode_null(null)};
-encode_value('MIN_KEY') -> {?MIN_KEY, encode_min_key('MIN_KEY')};
-encode_value('MAX_KEY') -> {?MAX_KEY, encode_max_key('MAX_KEY')};
-encode_value({_} = Id) -> {?BSON_OBJECTID, encode_objectid(Id)};
-encode_value({regexp, _, _} = Regexp) -> {?BSON_REGEXP, encode_regexp(Regexp)};
-encode_value({timestamp, _, _} = Timestamp) -> {?BSON_TIMESTAMP, encode_timestamp(Timestamp)};
-encode_value({javascript, _} = Javascript) -> {?BSON_JAVASCRIPT, encode_javascript(Javascript)};
-encode_value({binary, _} = Binary) -> {?BSON_BINARY, encode_binary(Binary)};
-encode_value({function, _} = Binary) -> {?BSON_BINARY, encode_binary(Binary)};
-encode_value({uuid, _} = Binary) -> {?BSON_BINARY, encode_binary(Binary)};
-encode_value({md5, _} = Binary) -> {?BSON_BINARY, encode_binary(Binary)};
-encode_value({'$$', _} = Binary) -> {?BSON_BINARY, encode_binary(Binary)};
-encode_value({_, _, _} = Date) -> {?BSON_DATE, encode_date(Date)};
-encode_value(Int) when ?isint32(Int) -> {?BSON_INT32, encode_int32(Int)};
-encode_value(Int) when ?isint64(Int) -> {?BSON_INT64, encode_int64(Int)};
-encode_value(Float) when erlang:is_float(Float) -> {?BSON_FLOAT64, encode_float64(Float)};
-encode_value(Boolean) when erlang:is_boolean(Boolean) -> {?BSON_BOOLEAN, encode_boolean(Boolean)};
-encode_value(String) when erlang:is_binary(String) -> {?BSON_STRING, encode_string(String)};
-encode_value(Document) when erlang:is_map(Document) -> {?BSON_DOCUMENT, encode_document(Document)};
-encode_value(Array) when erlang:is_list(Array) -> {?BSON_ARRAY, encode_array(Array)};
-encode_value(Atom) when erlang:is_atom(Atom) -> encode_value(erlang:atom_to_binary(Atom, utf8)).
-
--spec write_terminal(binary()) -> binary().
-write_terminal(Binary) ->
-    <<Binary/binary, ?BSON_EOT>>.
-
--spec fold_complex(fun(), term()) -> binary().
-fold_complex(Function, #{} = Document) ->
+-spec fold(fun(), map() | list()) -> binary().
+fold(Function, #{} = Document) ->
     maps:fold(Function, <<>>, Document);
-fold_complex(Function, Array) ->
-    fold_complex(Function, Array, 0, <<>>).
-
--spec fold_complex(fun(), list(), integer(), binary()) -> binary().
-fold_complex(_, [], _, Acc) -> Acc;
-fold_complex(Function, [Head|Rest], Index, Acc) ->
-    fold_complex(Function, Rest, Index + 1, Function(Index, Head, Acc)).
+fold(Function, Document) ->
+    bson:loop(fun
+        ({[], _, Acc}) -> {false, Acc};
+        ({[Value|Rest], Key, Acc}) ->
+            {true, {Rest, Key + 1, Function(erlang:integer_to_binary(Key), Value, Acc)}}
+    end, {Document, 0, <<>>}).

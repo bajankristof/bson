@@ -1,225 +1,151 @@
 -module(bson_decoder).
 
-%% high level functions
--export([decode/1]).
-%% lower level functions
 -export([
-    decode_int32/1,
-    decode_int64/1,
-    decode_float64/1,
-    decode_boolean/1,
-    decode_string/1,
-    decode_cstring/1,
-    decode_null/1,
-    decode_binary/1,
-    decode_date/1,
-    decode_regexp/1,
-    decode_timestamp/1,
-    decode_javascript/1,
-    decode_objectid/1,
-    decode_min_key/1,
-    decode_max_key/1,
-    decode_document/1,
-    decode_array/1
+    byte/1,
+    int32/1,
+    uint32/1,
+    int64/1,
+    uint64/1,
+    double/1,
+    boolean/1,
+    string/1,
+    cstring/1,
+    objectid/1,
+    datetime/1,
+    timestamp/1,
+    javascript/1,
+    regexp/1,
+    binary/1,
+    document/1,
+    array/1
 ]).
+-export([struct/2]).
 
--include_lib("bson/include/bson.hrl").
--include("./bson.hrl").
+-include("./constants.hrl").
+-include("./functions.hrl").
 
-%% @doc Returns an erlang term representation of
-%% the BSON document type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode(Binary :: binary()) -> {map(), binary()}.
-decode(<<?int32(Size), Remainder/binary>> = Binary) ->
-    Size = erlang:byte_size(Binary),
-    decode_document(Remainder, #{}).
+-spec byte(Payload :: binary()) -> {integer(), binary()}.
+byte(<<?byte(Value), Remainder/binary>>) ->
+    {Value, Remainder}.
 
-%% === TYPE DECODER FUNCTIONS ===
+-spec int32(Payload :: binary()) -> {integer(), binary()}.
+int32(<<?int32(Value), Remainder/binary>>) ->
+    {Value, Remainder}.
 
-%% @doc Returns an erlang term representation of
-%% the BSON int32 type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode_int32(Binary :: binary()) -> {integer(), binary()}.
-decode_int32(<<?int32(Int), Remainder/binary>>) ->
-    {Int, Remainder}.
+-spec uint32(Payload :: binary()) -> {integer(), binary()}.
+uint32(<<?uint32(Value), Remainder/binary>>) ->
+    {Value, Remainder}.
 
-%% @doc Returns an erlang term representation of
-%% the BSON int64 type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode_int64(Binary :: binary()) -> {integer(), binary()}.
-decode_int64(<<?int64(Int), Remainder/binary>>) ->
-    {Int, Remainder}.
+-spec int64(Payload :: binary()) -> {integer(), binary()}.
+int64(<<?int64(Value), Remainder/binary>>) ->
+    {Value, Remainder}.
 
-%% @doc Returns an erlang term representation of
-%% the BSON float64 type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode_float64(Binary :: binary()) -> {integer(), binary()}.
-decode_float64(<<?float64(Float), Remainder/binary>>) ->
-    {Float, Remainder}.
+-spec uint64(Payload :: binary()) -> {integer(), binary()}.
+uint64(<<?uint64(Value), Remainder/binary>>) ->
+    {Value, Remainder}.
 
-%% @doc Returns an erlang term representation of
-%% the BSON boolean type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode_boolean(Binary :: binary()) -> {boolean(), binary()}.
-decode_boolean(<<?uint8(Byte), Remainder/binary>>) ->
-    {Byte =:= 1, Remainder}.
+-spec double(Payload :: binary()) -> {float(), binary()}.
+double(<<?double(Value), Remainder/binary>>) ->
+    {Value, Remainder}.
 
-%% @doc Returns an erlang term representation of
-%% the BSON string type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode_string(Binary :: binary()) -> {binary(), binary()}.
-decode_string(<<?int32(Size), Binary/binary>>) ->
-    Length = Size - 1,
-    <<String:Length/binary, 0:8, Remainder/binary>> = Binary,
-    {String, Remainder}.
+-spec boolean(Payload :: binary()) -> {boolean(), binary()}.
+boolean(<<?byte(Value), Remainder/binary>>) ->
+    {Value =:= 1, Remainder}.
 
--spec decode_cstring(Binary :: binary()) -> {binary(), binary()}.
-decode_cstring(Binary) ->
-    read_terminal(Binary).
+-spec string(Payload :: binary()) -> {binary(), binary()}.
+string(<<?int32(Size), Value:(Size - 1)/binary, ?byte(0), Remainder/binary>>) ->
+    {Value, Remainder}.
 
-%% @doc Returns an erlang term representation of
-%% the BSON null type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode_null(Binary :: binary()) -> {null, binary()}.
-decode_null(Remainder) ->
-    {null, Remainder}.
+-spec cstring(Payload :: binary()) -> {binary(), binary()}.
+cstring(<<Payload/binary>>) ->
+    bson:loop(fun
+        ({Acc, <<?byte(0), Remainder/binary>>}) ->
+            {false, {Acc, Remainder}};
+        ({Acc, <<Char:1/binary, Remainder/binary>>}) ->
+            {true, {<<Acc/binary, Char/binary>>, Remainder}}
+    end, {<<>>, Payload}).
 
-%% @doc Returns an erlang term representation of
-%% the BSON binary type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode_binary(Binary :: binary()) -> {bson:bin(), binary()}.
-decode_binary(<<?int32(Size), ?uint8(Tag), Binary/binary>>) ->
-    Type = case Tag of
-        ?BSON_SUBTYPE_BINARY -> binary;
-        ?BSON_SUBTYPE_FUNCTION -> function;
-        ?BSON_SUBTYPE_UUID -> uuid;
-        ?BSON_SUBTYPE_MD5 -> md5;
-        ?BSON_SUBTYPE_USER_DEFINED -> '$$'
-    end,
-    <<Bytes:Size/binary, Remainder/binary>> = Binary,
-    {{Type, Bytes}, Remainder}.
+-spec objectid(Payload :: binary()) -> {bson:objectid(), binary()}.
+objectid(<<Value:12/binary, Remainder/binary>>) ->
+    {{Value}, Remainder}.
 
-%% @doc Returns an erlang timestamp representation of
-%% the BSON UTC date type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode_date(Binary :: binary()) -> {erlang:timestamp(), binary()}.
-decode_date(<<?int64(Millisecs), Remainder/binary>>) ->
-    Megasecs = Millisecs div 1000000000,
-    Secs = (Millisecs div 1000) rem 1000000,
-    Microsecs = Millisecs * 1000 rem 1000000,
-    {{Megasecs, Secs, Microsecs}, Remainder}.
+-spec datetime(Payload :: binary()) -> {bson:datetime(), binary()}.
+datetime(<<?int64(Value), Remainder/binary>>) ->
+    {{Value div 1000000000, (Value div 1000) rem 1000000, (Value * 1000) rem 1000000}, Remainder}.
 
-%% @doc Returns an erlang term representation of
-%% the BSON regexp type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode_regexp(Binary :: binary()) -> {bson:regexp(), binary()}.
-decode_regexp(Binary) ->
-    {Regexp, Rest} = decode_cstring(Binary),
-    {Opts, Remainder} = decode_cstring(Rest),
-    {{regexp, Regexp, Opts}, Remainder}.
+-spec timestamp(Payload :: binary()) -> {bson:timestamp(), binary()}.
+timestamp(<<?uint64(Value), Remainder/binary>>) ->
+    {{timestamp, Value}, Remainder}.
 
-%% @doc Returns an erlang term representation of
-%% the BSON timestamp type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode_timestamp(Binary :: binary()) -> {bson:timestamp(), binary()}.
-decode_timestamp(<<?uint32(Timestamp), ?uint32(Id), Remainder/binary>>) ->
-    {{timestamp, Timestamp, Id}, Remainder}.
+-spec javascript(Payload :: binary()) -> {bson:javascript(), binary()}.
+javascript(<<Payload/binary>>) ->
+    {Value, Remainder} = string(Payload),
+    {{javascript, Value}, Remainder}.
 
-%% @doc Returns an erlang term representation of
-%% the BSON javascript code type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode_javascript(Binary :: binary()) -> {bson:javascript(), binary()}.
-decode_javascript(Binary) ->
-    {Code, Remainder} = decode_string(Binary),
-    {{javascript, Code}, Remainder}.
+-spec regexp(Payload :: binary()) -> {bson:regexp(), binary()}.
+regexp(<<Payload/binary>>) ->
+    {Value, Remainder} = struct([cstring, cstring], Payload),
+    {{regexp, Value}, Remainder}.
 
-%% @doc Returns an erlang term representation of
-%% the BSON object id type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode_objectid(Binary :: binary()) -> {bson:objectid(), binary()}.
-decode_objectid(<<Id:12/binary, Remainder/binary>>) ->
-    {{Id}, Remainder}.
+-spec binary(Payload :: binary()) -> {bson:binary(), binary()}.
+binary(<<?int32(Size), ?byte(?BINARY_SUBTYPE_DEFAULT), Value:Size/binary, Remainder/binary>>) ->
+    {{binary, Value}, Remainder};
+binary(<<?int32(Size), ?byte(?BINARY_SUBTYPE_FUNCTION), Value:Size/binary, Remainder/binary>>) ->
+    {{function, Value}, Remainder};
+binary(<<?int32(Size), ?byte(?BINARY_SUBTYPE_UUID), Value:Size/binary, Remainder/binary>>) ->
+    {{uuid, Value}, Remainder};
+binary(<<?int32(Size), ?byte(?BINARY_SUBTYPE_MD5), Value:Size/binary, Remainder/binary>>) ->
+    {{md5, Value}, Remainder};
+binary(<<?int32(Size), ?byte(?BINARY_SUBTYPE_USER_DEFINED), Value:Size/binary, Remainder/binary>>) ->
+    {{'$$', Value}, Remainder}.
 
-%% @doc Returns an erlang term representation of
-%% the BSON min key type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode_min_key(Binary :: binary()) -> {bson:min_key(), binary()}.
-decode_min_key(Remainder) ->
-    {'MIN_KEY', Remainder}.
+-spec document(Payload :: binary()) -> {map(), binary()}.
+document(<<?int32(Size), Payload:(Size - 5)/binary, ?byte(0), Remainder/binary>>) ->
+    {elist(Payload, #{}), Remainder}.
 
-%% @doc Returns an erlang term representation of
-%% the BSON max key type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode_max_key(Binary :: binary()) -> {bson:max_key(), binary()}.
-decode_max_key(Remainder) ->
-    {'MAX_KEY', Remainder}.
+-spec array(Payload :: binary()) -> {list(), binary()}.
+array(<<?int32(Size), Payload:(Size - 5)/binary, ?byte(0), Remainder/binary>>) ->
+    {elist(Payload, []), Remainder}.
 
-%% @doc Returns an erlang term representation of
-%% the BSON document type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode_document(Binary :: binary()) -> {map(), binary()}.
-decode_document(Binary) ->
-    decode_document(Binary, #{}).
+-spec struct(Spec :: list(Function :: atom()), Payload :: binary()) -> {list(), binary()}.
+struct(Spec, <<Payload/binary>>) ->
+    lists:foldl(fun (Function, {Acc, Part}) ->
+        {Value, Remainder} = erlang:apply(?MODULE, Function, [Part]),
+        {Acc ++ [Value], Remainder}
+    end, {[], Payload}, Spec).
 
-%% @doc Returns an erlang term representation of
-%% the BSON array type based on `Binary`.
-%% (The second element of the tuple are the remaining bits of the operation.)
--spec decode_array(Binary :: binary()) -> {list(), binary()}.
-decode_array(Binary) ->
-    decode_array(Binary, []).
+%% private functions
 
-%% === UTILITY DECODER FUNCTIONS ===
+-spec elist(Payload :: binary(), Acc0 :: map() | list()) -> map() | list().
+elist(<<>>, Acc) -> Acc;
+elist(<<?byte(Type), Payload/binary>>, Acc) ->
+    case whatis(Type) of
+        {void, Value} ->
+            {Key, Remainder} = cstring(Payload),
+            elist(Remainder, put(Key, Value, Acc));
+        Function ->
+            {[Key, Value], Remainder} = struct([cstring, Function], Payload),
+            elist(Remainder, put(Key, Value, Acc))
+    end.
 
--spec decode_document(Binary :: binary(), Acc :: map()) -> {map(), binary()}.
-decode_document(<<?BSON_EOT, Remainder/binary>>, Acc) ->
-    {Acc, Remainder};
-decode_document(<<?uint8(Type), Binary/binary>>, Acc) ->
-    {Key, Value, Remainder} = decode_field(Type, Binary),
-    decode_document(Remainder, Acc#{Key => Value}).
+-spec whatis(Type :: integer()) -> atom() | {void, term()}.
+whatis(?NULL) -> {void, null};
+whatis(?MIN_KEY) -> {void, 'MIN_KEY'};
+whatis(?MAX_KEY) -> {void, 'MAX_KEY'};
+whatis(?INT32) -> int32;
+whatis(?INT64) -> int64;
+whatis(?DOUBLE) -> double;
+whatis(?BOOLEAN) -> boolean;
+whatis(?STRING) -> string;
+whatis(?OBJECTID) -> objectid;
+whatis(?DATETIME) -> datetime;
+whatis(?TIMESTAMP) -> timestamp;
+whatis(?JAVASCRIPT) -> javascript;
+whatis(?REGEXP) -> regexp;
+whatis(?BINARY) -> binary;
+whatis(?DOCUMENT) -> document;
+whatis(?ARRAY) -> array.
 
--spec decode_array(Binary :: binary(), Acc :: list()) -> {list(), binary()}.
-decode_array(<<?BSON_EOT, Remainder/binary>>, Acc) ->
-    {Acc, Remainder};
-decode_array(<<?uint8(Type), Binary/binary>>, Acc) ->
-    {Key, Value, Remainder} = decode_field(Type, Binary),
-    Length = erlang:binary_to_integer(Key),
-    Length = erlang:length(Acc),
-    decode_array(Remainder, Acc ++ [Value]).
-
--spec decode_field(Type :: integer(), Binary :: binary()) -> {binary(), term(), binary()}.
-decode_field(Type, Binary) ->
-    {Key, Rest} = decode_key(Binary),
-    {Value, Remainder} = decode_value(Type, Rest),
-    {Key, Value, Remainder}.
-
--spec decode_key(Binary :: binary()) -> {binary(), binary()}.
-decode_key(Binary) ->
-    decode_cstring(Binary).
-
--spec decode_value(Type :: integer(), Binary :: binary()) -> {term(), binary()}.
-decode_value(?BSON_INT32, Binary) -> decode_int32(Binary);
-decode_value(?BSON_INT64, Binary) -> decode_int64(Binary);
-decode_value(?BSON_FLOAT64, Binary) -> decode_float64(Binary);
-decode_value(?BSON_BOOLEAN, Binary) -> decode_boolean(Binary);
-decode_value(?BSON_STRING, Binary) -> decode_string(Binary);
-decode_value(?BSON_NULL, Binary) -> decode_null(Binary);
-decode_value(?BSON_BINARY, Binary) -> decode_binary(Binary);
-decode_value(?BSON_DATE, Binary) -> decode_date(Binary);
-decode_value(?BSON_REGEXP, Binary) -> decode_regexp(Binary);
-decode_value(?BSON_TIMESTAMP, Binary) -> decode_timestamp(Binary);
-decode_value(?BSON_JAVASCRIPT, Binary) -> decode_javascript(Binary);
-decode_value(?BSON_OBJECTID, Binary) -> decode_objectid(Binary);
-decode_value(?BSON_DOCUMENT, <<?int32(_), Binary/binary>>) -> decode_document(Binary);
-decode_value(?BSON_ARRAY, <<?int32(_), Binary/binary>>) -> decode_array(Binary);
-decode_value(?MIN_KEY, Binary) -> decode_min_key(Binary);
-decode_value(?MAX_KEY, Binary) -> decode_max_key(Binary).
-
--spec read_terminal(Binary :: binary()) -> {binary(), binary()}.
-read_terminal(Binary) ->
-    read_terminal(Binary, <<>>).
-
--spec read_terminal(Binary :: binary(), Acc :: binary()) -> {binary(), binary()}.
-read_terminal(<<?BSON_EOT, Remainder/binary>>, Acc) ->
-    {Acc, Remainder};
-read_terminal(<<Bit:1/binary, Remainder/binary>>, Acc) ->
-    read_terminal(Remainder, <<Acc/binary, Bit/binary>>).
+-spec put(Key :: binary(), Value :: term(), Acc :: map() | list()) -> map() | list().
+put(Key, Value, #{} = Acc) -> Acc#{Key => Value};
+put(_, Value, Acc) -> Acc ++ [Value].
