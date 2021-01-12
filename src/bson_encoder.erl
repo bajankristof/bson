@@ -16,7 +16,8 @@
     javascript/1,
     regexp/1,
     binary/1,
-    document/1
+    document/1,
+    array/1
 ]).
 -export([struct/1]).
 -export([void/1]).
@@ -105,7 +106,12 @@ binary({'$$', Value}) when erlang:is_binary(Value) ->
 
 -spec document(Document :: map() | list()) -> binary().
 document(Document) when erlang:is_map(Document) orelse erlang:is_list(Document) ->
-    Payload = elist(Document),
+    Payload = elist(document, Document),
+    <<?int32((erlang:byte_size(Payload) + 5)), Payload/binary, ?byte(0)>>.
+
+-spec array(Document :: list()) -> binary().
+array(Document) when erlang:is_list(Document) ->
+    Payload = elist(array, Document),
     <<?int32((erlang:byte_size(Payload) + 5)), Payload/binary, ?byte(0)>>.
 
 -spec struct(Spec :: list({Function :: atom(), Value :: term()})) -> binary().
@@ -119,12 +125,22 @@ void(_) -> <<>>.
 
 %% private functions
 
--spec elist(Document :: map() | list()) -> binary().
-elist(Document) ->
+-spec elist(Type :: atom(), Document :: map() | list()) -> binary().
+elist(document, []) ->
+    elist(document, #{});
+elist(document, [_|_] = Document) ->
+    fold(fun (_, {Key, Value}, Acc) ->
+        <<Acc/binary, (elem(Key, Value))/binary>>
+    end, Document);
+elist(_, Document) ->
     fold(fun (Key, Value, Acc) ->
-        {Type, Function} = whatis(Value),
-        <<Acc/binary, (struct([{byte, Type}, {cstring, Key}, {Function, Value}]))/binary>>
+        <<Acc/binary, (elem(Key, Value))/binary>>
     end, Document).
+
+-spec elem(Key :: binary() | list() | atom(), Value :: term()) -> binary().
+elem(Key, Value) ->
+    {Type, Function} = whatis(Value),
+    struct([{byte, Type}, {cstring, Key}, {Function, Value}]).
 
 -spec whatis(Value :: term()) -> {Type :: integer(), Function :: atom()}.
 whatis(null) -> {?NULL, void};
@@ -147,8 +163,8 @@ whatis({uuid, _}) -> {?BINARY, binary};
 whatis({md5, _}) -> {?BINARY, binary};
 whatis({'$$', _}) -> {?BINARY, binary};
 whatis(#{}) -> {?DOCUMENT, document};
-whatis([_|_]) -> {?ARRAY, document};
-whatis([]) -> {?ARRAY, document}.
+whatis([_|_]) -> {?ARRAY, array};
+whatis([]) -> {?ARRAY, array}.
 
 -spec fold(fun(), map() | list()) -> binary().
 fold(Function, #{} = Document) ->
