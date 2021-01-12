@@ -6,6 +6,7 @@
     uint32/1,
     int64/1,
     uint64/1,
+    long/1,
     double/1,
     boolean/1,
     string/1,
@@ -45,6 +46,10 @@ int64(Value) when ?isint64(Value) ->
 -spec uint64(Value :: integer()) -> binary().
 uint64(Value) when ?isuint64(Value) ->
     <<?uint64(Value)>>.
+
+-spec long(Value :: bson:long()) -> binary().
+long({long, Value}) when ?isint64(Value) ->
+    <<?int64(Value)>>.
 
 -spec double(Value :: float()) -> binary().
 double(Value) when erlang:is_float(Value) ->
@@ -162,6 +167,7 @@ whatis({function, _}) -> {?BINARY, binary};
 whatis({uuid, _}) -> {?BINARY, binary};
 whatis({md5, _}) -> {?BINARY, binary};
 whatis({'$$', _}) -> {?BINARY, binary};
+whatis({long, _}) -> {?LONG, long};
 whatis(#{}) -> {?DOCUMENT, document};
 whatis([_|_]) -> {?ARRAY, array};
 whatis([]) -> {?ARRAY, array}.

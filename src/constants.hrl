@@ -1,6 +1,7 @@
 %% TYPES
 -define(INT32, 16).
 -define(INT64, 18).
+-define(LONG, 18).
 -define(DOUBLE, 1).
 -define(BOOLEAN, 8).
 -define(STRING, 2).
