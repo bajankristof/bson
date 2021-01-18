@@ -125,6 +125,7 @@ struct(Spec) ->
         <<Acc/binary, (erlang:apply(?MODULE, Function, [Value]))/binary>>
     end, <<>>, Spec).
 
+%% @hidden
 -spec void(_) -> binary().
 void(_) -> <<>>.
 
