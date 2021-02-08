@@ -63,7 +63,7 @@ boolean(false) -> <<?byte(0)>>.
 
 -spec string(Value :: binary()) -> binary().
 string(Value) when erlang:is_binary(Value) ->
-    struct([{int32, erlang:byte_size(Value) + 1}, {cstring, Value}]);
+    <<?int32((erlang:byte_size(Value) + 1)), Value/binary, ?byte(0)>>;
 string(Value) when erlang:is_list(Value) ->
     string(erlang:list_to_binary(Value));
 string(Value) when erlang:is_atom(Value) ->
@@ -122,7 +122,7 @@ array(Document) when erlang:is_list(Document) ->
 -spec struct(Spec :: list({Function :: atom(), Value :: term()})) -> binary().
 struct(Spec) ->
     lists:foldl(fun ({Function, Value}, Acc) ->
-        <<Acc/binary, (erlang:apply(?MODULE, Function, [Value]))/binary>>
+        <<Acc/binary, (?MODULE:Function(Value))/binary>>
     end, <<>>, Spec).
 
 %% @hidden
@@ -146,18 +146,12 @@ elist(_, Document) ->
 -spec elem(Key :: binary() | list() | atom(), Value :: term()) -> binary().
 elem(Key, Value) ->
     {Type, Function} = whatis(Value),
-    struct([{byte, Type}, {cstring, Key}, {Function, Value}]).
+    <<?byte(Type), (cstring(Key))/binary, (?MODULE:Function(Value))/binary>>.
 
 -spec whatis(Value :: term()) -> {Type :: integer(), Function :: atom()}.
 whatis(null) -> {?NULL, void};
 whatis('MIN_KEY') -> {?MIN_KEY, void};
 whatis('MAX_KEY') -> {?MAX_KEY, void};
-whatis(Value) when ?isint32(Value) -> {?INT32, int32};
-whatis(Value) when ?isint64(Value) -> {?INT64, int64};
-whatis(Value) when erlang:is_float(Value) -> {?DOUBLE, double};
-whatis(Value) when erlang:is_boolean(Value) -> {?BOOLEAN, boolean};
-whatis(Value) when erlang:is_binary(Value) -> {?STRING, string};
-whatis(Value) when erlang:is_atom(Value) -> {?STRING, string};
 whatis({_}) -> {?OBJECTID, objectid};
 whatis({_, _, _}) -> {?DATETIME, datetime};
 whatis({timestamp, _}) -> {?TIMESTAMP, timestamp};
@@ -171,7 +165,12 @@ whatis({'$$', _}) -> {?BINARY, binary};
 whatis({long, _}) -> {?LONG, long};
 whatis(#{}) -> {?DOCUMENT, document};
 whatis([_|_]) -> {?ARRAY, array};
-whatis([]) -> {?ARRAY, array}.
+whatis([]) -> {?ARRAY, array};
+whatis(Value) when ?isint32(Value) -> {?INT32, int32};
+whatis(Value) when ?isint64(Value) -> {?INT64, int64};
+whatis(Value) when ?isdouble(Value) -> {?DOUBLE, double};
+whatis(Value) when ?isboolean(Value) -> {?BOOLEAN, boolean};
+whatis(Value) when ?isstring(Value) -> {?STRING, string}.
 
 -spec fold(fun(), map() | list()) -> binary().
 fold(Function, #{} = Document) ->

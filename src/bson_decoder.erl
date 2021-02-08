@@ -105,14 +105,17 @@ document(<<?int32(Size), Payload:(Size - 5)/binary, ?byte(0), Remainder/binary>>
 
 -spec array(Payload :: binary()) -> {list(), binary()}.
 array(<<?int32(Size), Payload:(Size - 5)/binary, ?byte(0), Remainder/binary>>) ->
-    {elist(Payload, []), Remainder}.
+    {lists:reverse(elist(Payload, [])), Remainder}.
 
 -spec struct(Spec :: list(Function :: atom()), Payload :: binary()) -> {list(), binary()}.
 struct(Spec, <<Payload/binary>>) ->
-    lists:foldl(fun (Function, {Acc, Part}) ->
-        {Value, Remainder} = erlang:apply(?MODULE, Function, [Part]),
-        {Acc ++ [Value], Remainder}
-    end, {[], Payload}, Spec).
+    bson:loop(fun
+        ({[], {Acc, Remainder}}) ->
+            {false, {lists:reverse(Acc), Remainder}};
+        ({[Function | Rest], {Acc, Part}}) ->
+            {Value, Remainder} = ?MODULE:Function(Part),
+            {true, {Rest, {[Value | Acc], Remainder}}}
+    end, {Spec, {[], Payload}}).
 
 %% private functions
 
@@ -148,4 +151,4 @@ whatis(?ARRAY) -> array.
 
 -spec put(Key :: binary(), Value :: term(), Acc :: map() | list()) -> map() | list().
 put(Key, Value, #{} = Acc) -> Acc#{Key => Value};
-put(_, Value, Acc) -> Acc ++ [Value].
+put(_, Value, Acc) -> [Value | Acc].

@@ -12,3 +12,6 @@
 -define(isuint32(Value), erlang:is_integer(Value) andalso 0 =< Value andalso Value =< 16#ffffffff).
 -define(isint64(Value), erlang:is_integer(Value) andalso -16#8000000000000000 =< Value andalso Value =< 16#7fffffffffffffff).
 -define(isuint64(Value), erlang:is_integer(Value) andalso 0 =< Value andalso Value =< 16#ffffffffffffffff).
+-define(isdouble(Value), erlang:is_float(Value)).
+-define(isboolean(Value), erlang:is_boolean(Value)).
+-define(isstring(Value), erlang:is_binary(Value) orelse erlang:is_atom(Value)).

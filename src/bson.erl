@@ -48,7 +48,7 @@ destruct(Spec, Payload) -> bson_decoder:struct(Spec, Payload).
 %% where `Id' is a BSON ObjectId in `hexadecimal' string format.
 -spec binary_to_objectid(binary()) -> objectid().
 binary_to_objectid(Id) ->
-    bson:loop(fun
+    loop(fun
         ({<<>>, Acc}) -> {false, {Acc}};
         ({<<Hex:2/binary, Rest/binary>>, Acc}) ->
             Chunk = erlang:binary_to_integer(Hex, 16),
@@ -59,7 +59,7 @@ binary_to_objectid(Id) ->
 %% where `Id' is a `bson:objectid()'.
 -spec objectid_to_binary(objectid()) -> binary().
 objectid_to_binary({Id}) ->
-    bson:loop(fun
+    loop(fun
         ({<<>>, Acc}) -> {false, string:lowercase(Acc)};
         ({<<Chunk, Rest/binary>>, Acc}) ->
             Hex = erlang:integer_to_binary(Chunk, 16),
