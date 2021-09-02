@@ -11,13 +11,13 @@
 
 -type document() :: map() | list().
 -type array() :: list().
--type objectid() :: #'bson.objectid'{}.
+-type objectid() :: #'bson.objectid'{value :: binary()}.
 -type datetime() :: erlang:timestamp().
--type timestamp() :: #'bson.timestamp'{}.
--type javascript() :: #'bson.javascript'{}.
--type regexp() :: #'bson.regexp'{}.
--type bin() :: #'bson.binary'{type :: binary | function | uuid | md5 | '$$'}.
--type long() :: #'bson.long'{}.
+-type timestamp() :: #'bson.timestamp'{value :: integer()}.
+-type javascript() :: #'bson.javascript'{value :: binary()}.
+-type regexp() :: #'bson.regexp'{value :: [binary()]}.
+-type bin() :: #'bson.binary'{type :: binary | function | uuid | md5 | '$$', value :: binary()}.
+-type long() :: #'bson.long'{value :: integer()}.
 -type min_key() :: 'MIN_KEY'.
 -type max_key() :: 'MAX_KEY'.
 -export_type([document/0, array/0]).

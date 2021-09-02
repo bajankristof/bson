@@ -4,20 +4,24 @@ bson
 
 BSON implementation in Erlang.
 
-[Read the docs!](https://github.com/bambyte/bson/blob/main/doc/bson.md)
+[Read the docs!](https://github.com/bajankristof/bson/blob/main/doc/bson.md)
 
 Build
 ---
 
     $ rebar3 compile
 
-Examples
+Getting started
 ---
+
+```erlang
+-include_lib("bson/include/bson.hrl").
+```
 
 ### `bson:encode`
 ```erlang
 bson:decode(<<22,0,0,0,7,95,105,100,0,95,220,150,226,21,1,11,30,59,151,141,20,0>>).
-%% #{<<"_id">> => {<<95,220,150,226,21,1,11,30,59,151,141,20>>}}
+%% #{<<"_id">> => #'bson.objectid'{value = <<95,220,150,226,21,1,11,30,59,151,141,20>>}}
 ```
 
 ### `bson:decode`

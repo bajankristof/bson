@@ -26,7 +26,7 @@ array() = list()
 
 
 <pre><code>
-bin() = {binary | function | uuid | md5 | $$, binary()}
+bin() = #bson.binary{type = binary | function | uuid | md5 | $$, value = binary()}
 </code></pre>
 
 
@@ -36,7 +36,7 @@ bin() = {binary | function | uuid | md5 | $$, binary()}
 
 
 <pre><code>
-datetime() = <a href="erlang.md#type-timestamp">erlang:timestamp()</a>
+datetime() = <a href="/Users/bajankristof/Projects/Erlang/erts/doc/erlang.md#type-timestamp">erlang:timestamp()</a>
 </code></pre>
 
 
@@ -56,7 +56,17 @@ document() = map() | list()
 
 
 <pre><code>
-javascript() = {javascript, binary()}
+javascript() = #bson.javascript{value = binary()}
+</code></pre>
+
+
+
+
+### <a name="type-long">long()</a> ###
+
+
+<pre><code>
+long() = #bson.long{value = integer()}
 </code></pre>
 
 
@@ -86,7 +96,7 @@ min_key() = MIN_KEY
 
 
 <pre><code>
-objectid() = {binary()}
+objectid() = #bson.objectid{value = binary()}
 </code></pre>
 
 
@@ -96,7 +106,7 @@ objectid() = {binary()}
 
 
 <pre><code>
-regexp() = {regexp, {binary(), binary()}}
+regexp() = #bson.regexp{value = [binary()]}
 </code></pre>
 
 
@@ -106,7 +116,7 @@ regexp() = {regexp, {binary(), binary()}}
 
 
 <pre><code>
-timestamp() = {timestamp, integer()}
+timestamp() = #bson.timestamp{value = integer()}
 </code></pre>
 
 <a name="index"></a>
@@ -161,7 +171,7 @@ and `Value` is the value to encode using the specified encoding.
 ### decode/1 ###
 
 <pre><code>
-decode(Payload::binary()) -&gt; {<a href="bson.md#type-document">bson:document()</a>, binary()}
+decode(Payload::binary()) -&gt; {<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-document">bson:document()</a>, binary()}
 </code></pre>
 <br />
 
@@ -187,7 +197,7 @@ where `Spec` is a list of atoms, each representing a valid
 ### encode/1 ###
 
 <pre><code>
-encode(Document::<a href="bson.md#type-document">bson:document()</a>) -&gt; binary()
+encode(Document::<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-document">bson:document()</a>) -&gt; binary()
 </code></pre>
 <br />
 
