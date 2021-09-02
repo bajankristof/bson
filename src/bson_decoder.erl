@@ -21,6 +21,7 @@
 ]).
 -export([struct/2]).
 
+-include("bson.hrl").
 -include("./constants.hrl").
 -include("./functions.hrl").
 
@@ -67,7 +68,7 @@ cstring(<<Payload/binary>>) ->
 
 -spec objectid(Payload :: binary()) -> {bson:objectid(), binary()}.
 objectid(<<Value:12/binary, Remainder/binary>>) ->
-    {{Value}, Remainder}.
+    {#'bson.objectid'{value = Value}, Remainder}.
 
 -spec datetime(Payload :: binary()) -> {bson:datetime(), binary()}.
 datetime(<<?int64(Value), Remainder/binary>>) ->
@@ -75,29 +76,29 @@ datetime(<<?int64(Value), Remainder/binary>>) ->
 
 -spec timestamp(Payload :: binary()) -> {bson:timestamp(), binary()}.
 timestamp(<<?uint64(Value), Remainder/binary>>) ->
-    {{timestamp, Value}, Remainder}.
+    {#'bson.timestamp'{value = Value}, Remainder}.
 
 -spec javascript(Payload :: binary()) -> {bson:javascript(), binary()}.
 javascript(<<Payload/binary>>) ->
     {Value, Remainder} = string(Payload),
-    {{javascript, Value}, Remainder}.
+    {#'bson.javascript'{value = Value}, Remainder}.
 
 -spec regexp(Payload :: binary()) -> {bson:regexp(), binary()}.
 regexp(<<Payload/binary>>) ->
     {Value, Remainder} = struct([cstring, cstring], Payload),
-    {{regexp, Value}, Remainder}.
+    {#'bson.regexp'{value = Value}, Remainder}.
 
 -spec binary(Payload :: binary()) -> {bson:binary(), binary()}.
 binary(<<?int32(Size), ?byte(?BINARY_SUBTYPE_DEFAULT), Value:Size/binary, Remainder/binary>>) ->
-    {{binary, Value}, Remainder};
+    {#'bson.binary'{type = binary, value = Value}, Remainder};
 binary(<<?int32(Size), ?byte(?BINARY_SUBTYPE_FUNCTION), Value:Size/binary, Remainder/binary>>) ->
-    {{function, Value}, Remainder};
+    {#'bson.binary'{type = function, value = Value}, Remainder};
 binary(<<?int32(Size), ?byte(?BINARY_SUBTYPE_UUID), Value:Size/binary, Remainder/binary>>) ->
-    {{uuid, Value}, Remainder};
+    {#'bson.binary'{type = uuid, value = Value}, Remainder};
 binary(<<?int32(Size), ?byte(?BINARY_SUBTYPE_MD5), Value:Size/binary, Remainder/binary>>) ->
-    {{md5, Value}, Remainder};
+    {#'bson.binary'{type = md5, value = Value}, Remainder};
 binary(<<?int32(Size), ?byte(?BINARY_SUBTYPE_USER_DEFINED), Value:Size/binary, Remainder/binary>>) ->
-    {{'$$', Value}, Remainder}.
+    {#'bson.binary'{type = '$$', value = Value}, Remainder}.
 
 -spec document(Payload :: binary()) -> {map(), binary()}.
 document(<<?int32(Size), Payload:(Size - 5)/binary, ?byte(0), Remainder/binary>>) ->

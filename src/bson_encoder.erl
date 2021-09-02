@@ -23,6 +23,7 @@
 -export([struct/1]).
 -export([void/1]).
 
+-include("bson.hrl").
 -include("./constants.hrl").
 -include("./functions.hrl").
 
@@ -48,7 +49,7 @@ uint64(Value) when ?isuint64(Value) ->
     <<?uint64(Value)>>.
 
 -spec long(Value :: bson:long()) -> binary().
-long({long, Value}) when ?isint64(Value) ->
+long(#'bson.long'{value = Value}) when ?isint64(Value) ->
     <<?int64(Value)>>.
 
 -spec double(Value :: float()) -> binary().
@@ -78,35 +79,38 @@ cstring(Value) when erlang:is_atom(Value) ->
     cstring(erlang:atom_to_binary(Value)).
 
 -spec objectid(bson:objectid()) -> binary().
-objectid({Value}) when erlang:is_binary(Value) ->
+objectid(#'bson.objectid'{value = Value}) when erlang:is_binary(Value) ->
     <<Value:12/binary>>.
 
 -spec datetime(bson:datetime()) -> binary().
-datetime({Megasecs, Secs, Microsecs}) ->
-    <<?int64((Megasecs * 1000000000 + Secs * 1000 + Microsecs div 1000))>>.
+datetime({MegaSecs, Secs, MicroSecs})
+        when is_integer(MegaSecs)
+        andalso is_integer(Secs)
+        andalso is_integer(MicroSecs) ->
+    <<?int64((MegaSecs * 1000000000 + Secs * 1000 + MicroSecs div 1000))>>.
 
 -spec timestamp(bson:timestamp()) -> binary().
-timestamp({timestamp, Value}) ->
+timestamp(#'bson.timestamp'{value = Value}) ->
     uint64(Value).
 
 -spec javascript(bson:javascript()) -> binary().
-javascript({javascript, Value}) ->
+javascript(#'bson.javascript'{value = Value}) ->
     string(Value).
 
 -spec regexp(bson:regexp()) -> binary().
-regexp({regexp, [_, _] = Value}) ->
+regexp(#'bson.regexp'{value = [_, _] = Value}) ->
     erlang:list_to_binary(lists:map(fun cstring/1, Value)).
 
 -spec binary(bson:bin()) -> binary().
-binary({binary, Value}) when erlang:is_binary(Value) ->
+binary(#'bson.binary'{type = binary, value = Value}) when erlang:is_binary(Value) ->
     <<?int32((erlang:byte_size(Value))), ?byte(?BINARY_SUBTYPE_DEFAULT), Value/binary>>;
-binary({function, Value}) when erlang:is_binary(Value) ->
+binary(#'bson.binary'{type = function, value = Value}) when erlang:is_binary(Value) ->
     <<?int32((erlang:byte_size(Value))), ?byte(?BINARY_SUBTYPE_FUNCTION), Value/binary>>;
-binary({uuid, Value}) when erlang:is_binary(Value) ->
+binary(#'bson.binary'{type = uuid, value = Value}) when erlang:is_binary(Value) ->
     <<?int32((erlang:byte_size(Value))), ?byte(?BINARY_SUBTYPE_UUID), Value/binary>>;
-binary({md5, Value}) when erlang:is_binary(Value) ->
+binary(#'bson.binary'{type = md5, value = Value}) when erlang:is_binary(Value) ->
     <<?int32((erlang:byte_size(Value))), ?byte(?BINARY_SUBTYPE_MD5), Value/binary>>;
-binary({'$$', Value}) when erlang:is_binary(Value) ->
+binary(#'bson.binary'{type = '$$', value = Value}) when erlang:is_binary(Value) ->
     <<?int32((erlang:byte_size(Value))), ?byte(?BINARY_SUBTYPE_USER_DEFINED), Value/binary>>.
 
 -spec document(Document :: map() | list()) -> binary().
@@ -152,17 +156,13 @@ elem(Key, Value) ->
 whatis(null) -> {?NULL, void};
 whatis('MIN_KEY') -> {?MIN_KEY, void};
 whatis('MAX_KEY') -> {?MAX_KEY, void};
-whatis({_}) -> {?OBJECTID, objectid};
+whatis(#'bson.objectid'{}) -> {?OBJECTID, objectid};
+whatis(#'bson.timestamp'{}) -> {?TIMESTAMP, timestamp};
+whatis(#'bson.javascript'{}) -> {?JAVASCRIPT, javascript};
+whatis(#'bson.regexp'{}) -> {?REGEXP, regexp};
+whatis(#'bson.binary'{}) -> {?BINARY, binary};
+whatis(#'bson.long'{}) -> {?LONG, long};
 whatis({_, _, _}) -> {?DATETIME, datetime};
-whatis({timestamp, _}) -> {?TIMESTAMP, timestamp};
-whatis({javascript, _}) -> {?JAVASCRIPT, javascript};
-whatis({regexp, _}) -> {?REGEXP, regexp};
-whatis({binary, _}) -> {?BINARY, binary};
-whatis({function, _}) -> {?BINARY, binary};
-whatis({uuid, _}) -> {?BINARY, binary};
-whatis({md5, _}) -> {?BINARY, binary};
-whatis({'$$', _}) -> {?BINARY, binary};
-whatis({long, _}) -> {?LONG, long};
 whatis(#{}) -> {?DOCUMENT, document};
 whatis([_|_]) -> {?ARRAY, array};
 whatis([]) -> {?ARRAY, array};

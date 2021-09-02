@@ -7,19 +7,22 @@
 %% helper functions
 -export([loop/2]).
 
+-include("bson.hrl").
+
 -type document() :: map() | list().
 -type array() :: list().
--type objectid() :: {binary()}.
+-type objectid() :: #'bson.objectid'{}.
 -type datetime() :: erlang:timestamp().
--type timestamp() :: {timestamp, integer()}.
--type javascript() :: {javascript, binary()}.
--type regexp() :: {regexp, {binary(), binary()}}.
--type bin() :: {binary | function | uuid | md5 | '$$', binary()}.
+-type timestamp() :: #'bson.timestamp'{}.
+-type javascript() :: #'bson.javascript'{}.
+-type regexp() :: #'bson.regexp'{}.
+-type bin() :: #'bson.binary'{type :: binary | function | uuid | md5 | '$$'}.
+-type long() :: #'bson.long'{}.
 -type min_key() :: 'MIN_KEY'.
 -type max_key() :: 'MAX_KEY'.
 -export_type([document/0, array/0]).
 -export_type([objectid/0, datetime/0, timestamp/0]).
--export_type([bin/0, regexp/0, javascript/0, min_key/0, max_key/0]).
+-export_type([javascript/0, regexp/0, bin/0, long/0, min_key/0, max_key/0]).
 
 %% @doc Returns `{Document, Remainder}' based on `Payload'
 %% where `Document' is the decoded BSON document (`bson:document()')
@@ -49,7 +52,7 @@ destruct(Spec, Payload) -> bson_decoder:struct(Spec, Payload).
 -spec binary_to_objectid(binary()) -> objectid().
 binary_to_objectid(Id) ->
     loop(fun
-        ({<<>>, Acc}) -> {false, {Acc}};
+        ({<<>>, Acc}) -> {false, #'bson.objectid'{value = Acc}};
         ({<<Hex:2/binary, Rest/binary>>, Acc}) ->
             Chunk = erlang:binary_to_integer(Hex, 16),
             {true, {Rest, <<Acc/binary, Chunk>>}}
@@ -58,7 +61,7 @@ binary_to_objectid(Id) ->
 %% @doc Returns the `hexadecimal' string representation of `Id'
 %% where `Id' is a `bson:objectid()'.
 -spec objectid_to_binary(objectid()) -> binary().
-objectid_to_binary({Id}) ->
+objectid_to_binary(#'bson.objectid'{value = Id}) ->
     loop(fun
         ({<<>>, Acc}) -> {false, string:lowercase(Acc)};
         ({<<Chunk, Rest/binary>>, Acc}) ->
