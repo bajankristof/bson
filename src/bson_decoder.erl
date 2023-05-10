@@ -22,8 +22,8 @@
 -export([struct/2]).
 
 -include("bson.hrl").
--include("./constants.hrl").
--include("./functions.hrl").
+-include("./_constants.hrl").
+-include("./_macros.hrl").
 
 -spec byte(Payload :: binary()) -> {integer(), binary()}.
 byte(<<?byte(Value), Remainder/binary>>) ->

@@ -36,7 +36,7 @@ bin() = #bson.binary{type = binary | function | uuid | md5 | $$, value = binary(
 
 
 <pre><code>
-datetime() = <a href="/Users/bajankristof/Projects/Erlang/erts/doc/erlang.md#type-timestamp">erlang:timestamp()</a>
+datetime() = <a href="#/erts/doc/erlang.md#type-timestamp">erlang:timestamp()</a>
 </code></pre>
 
 
@@ -171,7 +171,7 @@ and `Value` is the value to encode using the specified encoding.
 ### decode/1 ###
 
 <pre><code>
-decode(Payload::binary()) -&gt; {<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-document">bson:document()</a>, binary()}
+decode(Payload::binary()) -&gt; {<a href="#/bson/doc/bson.md#type-document">bson:document()</a>, binary()}
 </code></pre>
 <br />
 
@@ -197,7 +197,7 @@ where `Spec` is a list of atoms, each representing a valid
 ### encode/1 ###
 
 <pre><code>
-encode(Document::<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-document">bson:document()</a>) -&gt; binary()
+encode(Document::<a href="#/bson/doc/bson.md#type-document">bson:document()</a>) -&gt; binary()
 </code></pre>
 <br />
 

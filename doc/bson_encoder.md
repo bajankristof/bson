@@ -30,7 +30,7 @@ array(Document::list()) -&gt; binary()
 ### binary/1 ###
 
 <pre><code>
-binary(X1::<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-bin">bson:bin()</a>) -&gt; binary()
+binary(X1::<a href="#/bson/doc/bson.md#type-bin">bson:bin()</a>) -&gt; binary()
 </code></pre>
 <br />
 
@@ -66,7 +66,7 @@ cstring(Value::binary()) -&gt; binary()
 ### datetime/1 ###
 
 <pre><code>
-datetime(X1::<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-datetime">bson:datetime()</a>) -&gt; binary()
+datetime(X1::<a href="#/bson/doc/bson.md#type-datetime">bson:datetime()</a>) -&gt; binary()
 </code></pre>
 <br />
 
@@ -111,7 +111,7 @@ int64(Value::integer()) -&gt; binary()
 ### javascript/1 ###
 
 <pre><code>
-javascript(X1::<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-javascript">bson:javascript()</a>) -&gt; binary()
+javascript(X1::<a href="#/bson/doc/bson.md#type-javascript">bson:javascript()</a>) -&gt; binary()
 </code></pre>
 <br />
 
@@ -120,7 +120,7 @@ javascript(X1::<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#typ
 ### long/1 ###
 
 <pre><code>
-long(Value::<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-long">bson:long()</a>) -&gt; binary()
+long(Value::<a href="#/bson/doc/bson.md#type-long">bson:long()</a>) -&gt; binary()
 </code></pre>
 <br />
 
@@ -129,7 +129,7 @@ long(Value::<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-l
 ### objectid/1 ###
 
 <pre><code>
-objectid(X1::<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-objectid">bson:objectid()</a>) -&gt; binary()
+objectid(X1::<a href="#/bson/doc/bson.md#type-objectid">bson:objectid()</a>) -&gt; binary()
 </code></pre>
 <br />
 
@@ -138,7 +138,7 @@ objectid(X1::<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-
 ### regexp/1 ###
 
 <pre><code>
-regexp(X1::<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-regexp">bson:regexp()</a>) -&gt; binary()
+regexp(X1::<a href="#/bson/doc/bson.md#type-regexp">bson:regexp()</a>) -&gt; binary()
 </code></pre>
 <br />
 
@@ -165,7 +165,7 @@ struct(Spec::[{Function::atom(), Value::term()}]) -&gt; binary()
 ### timestamp/1 ###
 
 <pre><code>
-timestamp(X1::<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-timestamp">bson:timestamp()</a>) -&gt; binary()
+timestamp(X1::<a href="#/bson/doc/bson.md#type-timestamp">bson:timestamp()</a>) -&gt; binary()
 </code></pre>
 <br />
 

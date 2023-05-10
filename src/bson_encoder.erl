@@ -24,8 +24,8 @@
 -export([void/1]).
 
 -include("bson.hrl").
--include("./constants.hrl").
--include("./functions.hrl").
+-include("./_constants.hrl").
+-include("./_macros.hrl").
 
 %% API functions
 

@@ -30,7 +30,7 @@ array(Payload::binary()) -&gt; {list(), binary()}
 ### binary/1 ###
 
 <pre><code>
-binary(Payload::binary()) -&gt; {<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-binary">bson:binary()</a>, binary()}
+binary(Payload::binary()) -&gt; {<a href="#/bson/doc/bson.md#type-binary">bson:binary()</a>, binary()}
 </code></pre>
 <br />
 
@@ -66,7 +66,7 @@ cstring(Payload::binary()) -&gt; {binary(), binary()}
 ### datetime/1 ###
 
 <pre><code>
-datetime(Payload::binary()) -&gt; {<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-datetime">bson:datetime()</a>, binary()}
+datetime(Payload::binary()) -&gt; {<a href="#/bson/doc/bson.md#type-datetime">bson:datetime()</a>, binary()}
 </code></pre>
 <br />
 
@@ -111,7 +111,7 @@ int64(Payload::binary()) -&gt; {integer(), binary()}
 ### javascript/1 ###
 
 <pre><code>
-javascript(Payload::binary()) -&gt; {<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-javascript">bson:javascript()</a>, binary()}
+javascript(Payload::binary()) -&gt; {<a href="#/bson/doc/bson.md#type-javascript">bson:javascript()</a>, binary()}
 </code></pre>
 <br />
 
@@ -120,7 +120,7 @@ javascript(Payload::binary()) -&gt; {<a href="/Users/bajankristof/Projects/Erlan
 ### objectid/1 ###
 
 <pre><code>
-objectid(Payload::binary()) -&gt; {<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-objectid">bson:objectid()</a>, binary()}
+objectid(Payload::binary()) -&gt; {<a href="#/bson/doc/bson.md#type-objectid">bson:objectid()</a>, binary()}
 </code></pre>
 <br />
 
@@ -129,7 +129,7 @@ objectid(Payload::binary()) -&gt; {<a href="/Users/bajankristof/Projects/Erlang/
 ### regexp/1 ###
 
 <pre><code>
-regexp(Payload::binary()) -&gt; {<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-regexp">bson:regexp()</a>, binary()}
+regexp(Payload::binary()) -&gt; {<a href="#/bson/doc/bson.md#type-regexp">bson:regexp()</a>, binary()}
 </code></pre>
 <br />
 
@@ -156,7 +156,7 @@ struct(Spec::[Function::atom()], Payload::binary()) -&gt; {list(), binary()}
 ### timestamp/1 ###
 
 <pre><code>
-timestamp(Payload::binary()) -&gt; {<a href="/Users/bajankristof/Projects/Erlang/bson/doc/bson.md#type-timestamp">bson:timestamp()</a>, binary()}
+timestamp(Payload::binary()) -&gt; {<a href="#/bson/doc/bson.md#type-timestamp">bson:timestamp()</a>, binary()}
 </code></pre>
 <br />
 
