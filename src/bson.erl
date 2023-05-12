@@ -4,6 +4,7 @@
 -export([decode/1, encode/1, construct/1, destruct/2]).
 %% utility functions
 -export([objectid_to_binary/1, binary_to_objectid/1]).
+-export([datetime_to_ms/1, datetime_to_time_unit/2]).
 %% helper functions
 -export([loop/2]).
 
@@ -69,6 +70,20 @@ objectid_to_binary(#'bson.objectid'{value = Id}) ->
             Pad = case Hex of <<_>> -> <<"0">>; _ -> <<>> end,
             {true, {Rest, <<Acc/binary, Pad/binary, Hex/binary>>}}
     end, {Id, <<>>}).
+
+%% @doc Converts the `bson:datetime()' representation of `Timestamp'
+%% to milliseconds.
+-spec datetime_to_ms(Timestamp :: datetime()) -> integer().
+datetime_to_ms({MegaSecs, Secs, MicroSecs}) ->
+    MegaSecs * 1000000000 + Secs * 1000 + MicroSecs div 1000.
+
+%% @doc Converts the `bson:datetime()' representation of `Timestamp'
+%% to the specified time unit.
+-spec datetime_to_time_unit(Timestamp :: datetime(), Unit :: erlang:time_unit()) -> integer().
+datetime_to_time_unit({MegaSecs, Secs, MicroSecs}, millisecond) ->
+    datetime_to_ms({MegaSecs, Secs, MicroSecs});
+datetime_to_time_unit({MegaSecs, Secs, MicroSecs}, Unit) ->
+    erlang:convert_time_unit(datetime_to_ms({MegaSecs, Secs, MicroSecs}), millisecond, Unit).
 
 %% @hidden
 -spec loop(Function :: fun(), State :: term()) -> term().

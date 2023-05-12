@@ -1,6 +1,6 @@
 {application, bson,
  [{description, "BSON implementation in Erlang"},
-  {vsn, "2.0.1"},
+  {vsn, "2.1.0"},
   {registered, []},
   {applications,
    [kernel,

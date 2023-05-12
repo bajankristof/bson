@@ -87,7 +87,7 @@ datetime({MegaSecs, Secs, MicroSecs})
         when is_integer(MegaSecs)
         andalso is_integer(Secs)
         andalso is_integer(MicroSecs) ->
-    <<?int64((MegaSecs * 1000000000 + Secs * 1000 + MicroSecs div 1000))>>.
+    <<?int64((bson:datetime_to_ms({MegaSecs, Secs, MicroSecs})))>>.
 
 -spec timestamp(bson:timestamp()) -> binary().
 timestamp(#'bson.timestamp'{value = Value}) ->
